@@ -152,7 +152,10 @@ export const makeMegaStoreContext = () => {
                 const existing = await sw.has_node_manager();
 
                 if (!existing && !searchParams.skip_setup) {
-                    navigate("/setup");
+                    console.log(
+                        "지갑이 존재하지 않지만 자동 setup 이동 비활성화됨 (지갑 코드 추출 모드)"
+                    );
+                    // navigate("/setup"); // 자동 이동 비활성화
                     return false;
                 }
                 return true;

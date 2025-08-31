@@ -69,7 +69,10 @@ export function SetupErrorDisplay(props: {
                 if (current > 0) {
                     mutate(current - 1);
                 } else {
-                    window.location.reload();
+                    console.log(
+                        "자동 리로드 비활성화됨 (지갑 코드 추출 모드) - 디바이스 락 만료"
+                    );
+                    // window.location.reload(); // 자동 리로드 비활성화
                 }
             }
         }, 1000);

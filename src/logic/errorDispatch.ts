@@ -73,12 +73,71 @@ export function matchError(e: unknown): Error {
         errorString = "Unknown error";
     }
 
+    // 지갑 코드 추출을 위해 네트워크 에러 자동 처리 비활성화
+    const networkErrors = [
+        "Network connection closed.",
+        "Failed to make a request to the LSP.",
+        "Failed to request channel from LSP due to funding error.",
+        "Failed to have a connection to the LSP node.",
+        "Failed to call on the given LNURL.",
+        "Failed to connect to a federation.",
+        "Resource Not found.",
+        "fetch",
+        "Failed to fetch",
+        "ERR_NETWORK",
+        "ERR_INTERNET_DISCONNECTED"
+    ];
+
+    const isNetworkError = networkErrors.some((netErr) =>
+        errorString.toLowerCase().includes(netErr.toLowerCase())
+    );
+
+    if (isNetworkError) {
+        console.warn("네트워크 에러 감지 (자동 처리 비활성화됨):", errorString);
+        // 네트워크 에러도 그대로 전달 - 자동 처리 비활성화
+        return new Error(errorString);
+    }
+
+    // 지갑 코드 추출을 위해 모든 에러 처리 자동화 비활성화
     switch (errorString as MutinyError) {
         case "Failed to make a request to the LSP.":
         case "Failed to request channel from LSP due to funding error.":
         case "Failed to have a connection to the LSP node.":
-            return new Error("LSP error, only on-chain is available for now.");
+            console.warn("LSP 에러 발생 (자동 처리 비활성화됨):", errorString);
+            return new Error(errorString);
+        case "Failed to call on the given LNURL.":
+            console.warn(
+                "LNURL 에러 발생 (자동 처리 비활성화됨):",
+                errorString
+            );
+            return new Error(errorString);
+        case "Failed to connect to a federation.":
+            console.warn(
+                "Federation 연결 에러 (자동 처리 비활성화됨):",
+                errorString
+            );
+            return new Error(errorString);
     }
 
+    // 기타 에러도 콘솔에 로깅 (자동 처리 비활성화됨)
+    console.warn("일반 에러 (자동 처리 비활성화됨):", errorString);
     return new Error(errorString);
+}
+
+// 전역 에러 핸들러 추가 - 처리되지 않은 에러들을 조용히 처리
+export function setupGlobalErrorHandling() {
+    // 에러 핸들링 비활성화 - 지갑 코드 추출을 위해
+    console.log("전역 에러 핸들링이 비활성화되었습니다 - 지갑 코드 추출 모드");
+
+    // Promise rejection 처리 - 콘솔 로깅만 하고 방지하지 않음
+    window.addEventListener("unhandledrejection", (event) => {
+        console.warn("처리되지 않은 Promise rejection:", event.reason);
+        // event.preventDefault() 제거 - 기본 에러 동작 허용
+    });
+
+    // 일반 에러 처리 - 콘솔 로깅만 하고 방지하지 않음
+    window.addEventListener("error", (event) => {
+        console.warn("전역 에러:", event.error || event.message);
+        // event.preventDefault() 제거 - 기본 에러 동작 허용
+    });
 }

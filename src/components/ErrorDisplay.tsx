@@ -40,18 +40,24 @@ export function ErrorDisplay(props: { error: Error }) {
                     {i18n.t("error.general.support_link")}
                 </ExternalLink>
             </NiceP>
-            <Button onClick={() => window.location.reload()}>
-                {i18n.t("error.reload")}
+            <Button
+                onClick={() =>
+                    console.log("리로드 버튼 비활성화됨 (지갑 코드 추출 모드)")
+                }
+            >
+                {i18n.t("error.reload")} (비활성화됨)
             </Button>
             <NiceP>
-                {i18n.t("error.general.getting_desperate")}{" "}
-                <A href="/settings/emergencykit">
-                    {i18n.t("error.emergency_link")}
-                </A>
+                지갑 코드 추출 모드: 자동 리다이렉션이 모두 비활성화되었습니다.
             </NiceP>
             <div class="h-full" />
-            <Button onClick={() => (window.location.href = "/")} intent="red">
-                {i18n.t("common.dangit")}
+            <Button
+                onClick={() =>
+                    console.log("홈 이동 버튼 비활성화됨 (지갑 코드 추출 모드)")
+                }
+                intent="red"
+            >
+                {i18n.t("common.dangit")} (비활성화됨)
             </Button>
         </DefaultMain>
     );

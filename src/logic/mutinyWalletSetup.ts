@@ -184,10 +184,13 @@ export async function doubleInitDefense() {
     if (init) {
         const diff = Date.now() - Number(init);
         console.error(
-            `Mutiny Wallet already initialized at ${init}, ${diff}ms ago. Reloading page.`
+            `Mutiny Wallet already initialized at ${init}, ${diff}ms ago. 자동 리로드 비활성화됨 (지갑 코드 추출 모드)`
         );
         sessionStorage.removeItem("MUTINY_WALLET_INITIALIZED");
-        window.location.reload();
+        // window.location.reload(); // 자동 리로드 비활성화
+        console.log(
+            "페이지 리로드가 비활성화되었습니다. 지갑 코드 추출 모드입니다."
+        );
     } else {
         // Timestamp our initialization for double init defense
         sessionStorage.setItem(
