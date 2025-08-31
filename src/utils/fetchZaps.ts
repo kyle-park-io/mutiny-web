@@ -144,6 +144,14 @@ async function simpleZapFromEvent(
 // todo remove
 const PRIMAL_API = import.meta.env.VITE_PRIMAL;
 
+// Check if PRIMAL_API is problematic and warn user
+if (PRIMAL_API && PRIMAL_API.includes("primal-cache.mutinywallet.com")) {
+    console.warn(
+        "Warning: VITE_PRIMAL is set to a problematic endpoint that may cause timeouts:",
+        PRIMAL_API
+    );
+}
+
 type PrimalResponse = NostrEvent | NostrProfile;
 
 async function fetchZapsFromPrimal(
@@ -152,6 +160,12 @@ async function fetchZapsFromPrimal(
     until?: number
 ): Promise<PrimalResponse[]> {
     if (!primal_url) throw new Error("Missing PRIMAL_API environment variable");
+
+    // Skip if using the problematic primal-cache.mutinywallet.com API
+    if (primal_url.includes("primal-cache.mutinywallet.com")) {
+        console.warn("Skipping problematic Primal API endpoint:", primal_url);
+        return [];
+    }
 
     const query = {
         kinds: [9735, 0, 10000113],
@@ -165,26 +179,38 @@ async function fetchZapsFromPrimal(
         until ? { ...query, since: until } : query
     ]);
 
-    const response = await fetch(primal_url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: restPayload
-    });
+    try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    if (!response.ok) {
-        throw new Error(`Failed to load zaps`);
+        const response = await fetch(primal_url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: restPayload,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`Failed to load zaps: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // A primal response could be an error ({error: "error"}, or an array of events
+        if (data.error || !Array.isArray(data)) {
+            throw new Error("Zap response was not an array");
+        }
+
+        return data;
+    } catch (error) {
+        console.warn("Primal API request failed:", error);
+        return []; // Return empty array instead of throwing
     }
-
-    const data = await response.json();
-
-    // A primal response could be an error ({error: "error"}, or an array of events
-    if (data.error || !Array.isArray(data)) {
-        throw new Error("Zap response was not an array");
-    }
-
-    return data;
 }
 
 export const fetchZaps: ResourceFetcher<
@@ -308,16 +334,32 @@ export async function actuallyFetchNostrProfile(hexpub: string) {
         if (!PRIMAL_API)
             throw new Error("Missing PRIMAL_API environment variable");
 
+        // Skip if using the problematic primal-cache.mutinywallet.com API
+        if (PRIMAL_API.includes("primal-cache.mutinywallet.com")) {
+            console.warn(
+                "Skipping problematic Primal API endpoint for profile fetch:",
+                PRIMAL_API
+            );
+            return undefined;
+        }
+
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const response = await fetch(PRIMAL_API, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(["user_profile", { pubkey: hexpub }])
+            body: JSON.stringify(["user_profile", { pubkey: hexpub }]),
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-            throw new Error(`Failed to load profile`);
+            throw new Error(`Failed to load profile: ${response.status}`);
         }
 
         const data = await response.json();
@@ -328,8 +370,8 @@ export async function actuallyFetchNostrProfile(hexpub: string) {
             }
         }
     } catch (e) {
-        console.error("Failed to load profile: ", e);
-        throw new Error("Failed to load profile");
+        console.warn("Failed to load profile: ", e);
+        return undefined; // Return undefined instead of throwing
     }
 }
 
@@ -345,38 +387,60 @@ export type PseudoContact = {
 
 export async function searchProfiles(query: string): Promise<PseudoContact[]> {
     console.log("searching profiles...");
-    const response = await fetch(PRIMAL_API, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify([
-            "user_search",
-            { query: query.trim(), limit: 10 }
-        ])
-    });
 
-    if (!response.ok) {
-        throw new Error(`Failed to search`);
+    // Skip if using the problematic primal-cache.mutinywallet.com API
+    if (PRIMAL_API.includes("primal-cache.mutinywallet.com")) {
+        console.warn(
+            "Skipping problematic Primal API endpoint for profile search:",
+            PRIMAL_API
+        );
+        return [];
     }
 
-    const data = await response.json();
+    try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    const users: PseudoContact[] = [];
+        const response = await fetch(PRIMAL_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify([
+                "user_search",
+                { query: query.trim(), limit: 10 }
+            ]),
+            signal: controller.signal
+        });
 
-    for (const object of data) {
-        if (object.kind === 0) {
-            try {
-                const profile = object as NostrProfile;
-                const contact = profileToPseudoContact(profile);
-                users.push(contact);
-            } catch (e) {
-                console.error("Failed to parse content: ", object.content);
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`Failed to search: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const users: PseudoContact[] = [];
+
+        for (const object of data) {
+            if (object.kind === 0) {
+                try {
+                    const profile = object as NostrProfile;
+                    const contact = profileToPseudoContact(profile);
+                    users.push(contact);
+                } catch (e) {
+                    console.error("Failed to parse content: ", object.content);
+                }
             }
         }
-    }
 
-    return users;
+        return users;
+    } catch (error) {
+        console.warn("Profile search failed:", error);
+        return []; // Return empty array instead of throwing
+    }
 }
 
 export function profileToPseudoContact(profile: NostrProfile): PseudoContact {

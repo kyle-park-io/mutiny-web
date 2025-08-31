@@ -84,32 +84,22 @@ function SettingsStringsEditor(props: {
     }
 
     const MAINNET_LSP_OPTIONS = [
-        {
-            value: "https://0conf.lnolymp.us",
-            label: "Olympus by Zeus"
-        },
-        {
-            value: "https://lsp.voltageapi.com",
-            label: "Flow 2.0 by Voltage"
-        },
+        // Removed problematic LSP endpoints:
+        // - https://0conf.lnolymp.us (404 error)
+        // - https://lsp.voltageapi.com (connection failed)
         {
             value: "",
-            label: "None"
+            label: "None (Recommended - problematic LSPs disabled)"
         }
     ];
 
     const SIGNET_LSP_OPTIONS = [
-        {
-            value: "https://mutinynet-flow.lnolymp.us",
-            label: "Olympus by Zeus"
-        },
-        {
-            value: "https://signet-lsp.mutinywallet.com",
-            label: "Flow 2.0 by Voltage"
-        },
+        // Removed problematic LSP endpoints:
+        // - https://mutinynet-flow.lnolymp.us (404 error)
+        // - https://signet-lsp.mutinywallet.com (timeout)
         {
             value: "",
-            label: "None"
+            label: "None (Recommended - problematic LSPs disabled)"
         }
     ];
 
@@ -118,27 +108,12 @@ function SettingsStringsEditor(props: {
             ? SIGNET_LSP_OPTIONS
             : MAINNET_LSP_OPTIONS;
 
-    // If the user already has a non-voltage LSP, remove Voltage from the list
+    // Filter out problematic LSPs - all problematic endpoints have been removed from options
+    // This function now just returns the options as-is since we've already filtered them
     function filterOutVoltage(lspOptions: { value: string; label: string }[]) {
-        if (
-            props.initialSettings.network === "signet" &&
-            props.initialSettings.lsp &&
-            props.initialSettings.lsp !== "https://signet-lsp.mutinywallet.com"
-        ) {
-            return lspOptions.filter(
-                (option) =>
-                    option.value !== "https://signet-lsp.mutinywallet.com"
-            );
-        }
-
-        if (
-            props.initialSettings.lsp &&
-            props.initialSettings.lsp !== "https://lsp.voltageapi.com"
-        ) {
-            return lspOptions.filter(
-                (option) => option.value !== "https://lsp.voltageapi.com"
-            );
-        }
+        // All problematic LSPs have been removed from the options above
+        // Return options as-is
+        return lspOptions;
     }
 
     const LSP_OPTIONS = filterOutVoltage(LSP_OPTIONS_WITH_VOLTAGE);

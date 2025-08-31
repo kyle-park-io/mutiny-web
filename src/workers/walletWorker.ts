@@ -164,8 +164,10 @@ export async function setupMutinyWallet(
         nsec,
         // Nip7 (not supported in web worker)
         undefined,
-        // primal URL
-        primal_api || "https://primal-cache.mutinywallet.com/api",
+        // primal URL - skip problematic endpoint
+        primal_api && !primal_api.includes("primal-cache.mutinywallet.com")
+            ? primal_api
+            : undefined,
         /// blind auth url
         blind_auth,
         /// hermes url
