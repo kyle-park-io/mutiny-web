@@ -15,10 +15,12 @@ const i18n = use(HttpApi)
             fallbackNS: false,
             debug: true,
             detection: {
-                order: ["localStorage", "querystring", "navigator", "htmlTag"],
+                order: typeof window !== "undefined" 
+                    ? ["localStorage", "querystring", "navigator", "htmlTag"]
+                    : ["querystring", "htmlTag"],
                 lookupQuerystring: "lang",
                 lookupLocalStorage: "i18nextLng",
-                caches: ["localStorage"]
+                caches: typeof window !== "undefined" ? ["localStorage"] : []
             },
             backend: {
                 loadPath: "/i18n/{{lng}}.json"

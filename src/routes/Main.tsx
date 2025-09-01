@@ -16,6 +16,7 @@ import {
 } from "~/components";
 import { Fab } from "~/components/Fab";
 import { useMegaStore } from "~/state/megaStore";
+import { safeGetLocalStorage } from "~/utils/localStorage";
 
 export function WalletHeader(props: { loading: boolean }) {
     const navigate = useNavigate();
@@ -72,6 +73,11 @@ export function Main() {
 
     const navigate = useNavigate();
 
+    // Check for local wallet setup
+    const walletType = safeGetLocalStorage("wallet_type");
+    const userPrivateKey = safeGetLocalStorage("user_private_key");
+    const userAddress = safeGetLocalStorage("user_address");
+
     return (
         <DefaultMain>
             <Show when={state.load_stage !== "done"}>
@@ -83,6 +89,36 @@ export function Main() {
             </Show>
             <Show when={state.load_stage === "done"}>
                 <WalletHeader loading={false} />
+
+                {/* Show local wallet info if available */}
+                <Show when={walletType}>
+                    <div class="mb-4 rounded-lg bg-m-grey-800 p-4">
+                        <h3 class="mb-2 text-lg font-semibold">
+                            로컬 지갑 정보
+                        </h3>
+                        <div class="mb-2 text-sm text-m-grey-400">
+                            타입:{" "}
+                            {walletType === "wif"
+                                ? "WIF Private Key"
+                                : walletType === "hex"
+                                  ? "Hex Private Key"
+                                  : walletType === "address"
+                                    ? "Bitcoin Address"
+                                    : "Unknown"}
+                        </div>
+                        <Show when={userPrivateKey}>
+                            <div class="break-all rounded bg-m-grey-900 p-2 font-mono text-xs">
+                                Private Key: {userPrivateKey?.substring(0, 20)}
+                                ...
+                            </div>
+                        </Show>
+                        <Show when={userAddress}>
+                            <div class="break-all rounded bg-m-grey-900 p-2 font-mono text-xs">
+                                Address: {userAddress}
+                            </div>
+                        </Show>
+                    </div>
+                </Show>
 
                 <Show when={!state.wallet_loading && !state.safe_mode}>
                     <SocialActionRow

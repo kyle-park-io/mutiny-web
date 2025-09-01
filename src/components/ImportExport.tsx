@@ -15,6 +15,7 @@ import {
 import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
 import { downloadTextFile, eify } from "~/utils";
+import { safeNavigate } from "~/utils/localStorage";
 
 export function ImportExport(props: { emergency?: boolean }) {
     const i18n = useI18n();
@@ -121,7 +122,7 @@ export function ImportExport(props: { emergency?: boolean }) {
             }
 
             setTimeout(() => {
-                window.location.href = "/";
+                safeNavigate("/");
             }, 1000);
         } catch (e) {
             showToast(eify(e));

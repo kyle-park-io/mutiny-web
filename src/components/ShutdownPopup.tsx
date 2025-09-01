@@ -5,6 +5,12 @@ import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
 
 export function ShutdownPopup() {
+    // MUTINY_DISABLED가 true이면 shutdown 팝업을 표시하지 않음
+    if ((globalThis as any).MUTINY_DISABLED) {
+        console.log("ShutdownPopup disabled - MUTINY_DISABLED is true");
+        return null;
+    }
+
     const [state, actions, _sw] = useMegaStore();
     const selfHosted =
         state.settings?.selfhosted && state.settings?.selfhosted === "true";

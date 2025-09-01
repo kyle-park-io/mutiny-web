@@ -4,6 +4,7 @@ import { Share } from "@capacitor/share";
 import { Toast } from "@capacitor/toast";
 
 import { eify } from "./eify";
+import { safeCreateElement, safeDocument } from "./localStorage";
 
 export async function downloadTextFile(
     content: string,
@@ -52,7 +53,7 @@ export async function downloadTextFile(
         }
     } else {
         // https://stackoverflow.com/questions/34156282/how-do-i-save-json-to-local-text-file
-        const a = document.createElement("a");
+        const a = safeCreateElement("a") as HTMLAnchorElement;
         const file = new Blob([content], { type: contentType });
         a.href = URL.createObjectURL(file);
         a.download = fileName;

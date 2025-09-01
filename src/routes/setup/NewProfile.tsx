@@ -10,6 +10,7 @@ import {
 import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
 import { DEFAULT_NOSTR_NAME } from "~/utils";
+import { safeSetLocalStorage } from "~/utils/localStorage";
 
 export function NewProfile() {
     const [_state, _actions, sw] = useMegaStore();
@@ -30,7 +31,7 @@ export function NewProfile() {
             undefined
         );
         console.log("profile", profile);
-        localStorage.setItem("profile_setup_stage", "skipped");
+        safeSetLocalStorage("profile_setup_stage", "skipped");
         // navigate("/addfederation");
         navigate("/");
         setSkipping(false);
@@ -46,7 +47,7 @@ export function NewProfile() {
                 undefined
             );
             console.log("profile", profile);
-            localStorage.setItem("profile_setup_stage", "saved");
+            safeSetLocalStorage("profile_setup_stage", "saved");
             // navigate("/addfederation");
             navigate("/");
         } catch (e) {

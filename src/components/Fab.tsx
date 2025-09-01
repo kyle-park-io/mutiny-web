@@ -4,6 +4,7 @@ import { createSignal, JSX, onCleanup, onMount, Show } from "solid-js";
 
 import { Circle } from "~/components";
 import { useI18n } from "~/i18n/context";
+import { safeDocument } from "~/utils/localStorage";
 
 function FabMenuItem(props: {
     onClick: () => void;
@@ -37,11 +38,17 @@ export function FabMenu(props: {
     };
 
     onMount(() => {
-        document.body.addEventListener("click", handleClickOutside);
+        const doc = safeDocument();
+        if (doc?.body) {
+            doc.body.addEventListener("click", handleClickOutside);
+        }
     });
 
     onCleanup(() => {
-        document.body.removeEventListener("click", handleClickOutside);
+        const doc = safeDocument();
+        if (doc?.body) {
+            doc.body.removeEventListener("click", handleClickOutside);
+        }
     });
 
     return (

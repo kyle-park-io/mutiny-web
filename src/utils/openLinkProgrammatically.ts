@@ -2,6 +2,7 @@ import { AppLauncher } from "@capacitor/app-launcher";
 import { Capacitor } from "@capacitor/core";
 
 import { showToast, ToastArg } from "~/components";
+import { safeOpenWindow } from "~/utils/localStorage";
 
 // Have to pass in the failure text because i18n doesn't work in utils
 export async function openLinkProgrammatically(
@@ -21,12 +22,12 @@ export async function openLinkProgrammatically(
                 }
             );
             // Try to open in browser just in case that works glhf
-            window.open(url || "", "_blank");
+            safeOpenWindow(url, "_blank");
             return;
         } else {
             await AppLauncher.openUrl({ url });
         }
     } else {
-        window.open(url || "", "_blank");
+        safeOpenWindow(url, "_blank");
     }
 }

@@ -530,10 +530,8 @@ export function ActivityDetailsModal(props: {
     const tags = createAsync(async () => {
         if (
             !!data() &&
-            // @ts-expect-error we're narrowing the type here
-            data()?.labels !== undefined &&
-            // @ts-expect-error we're narrowing the type here
-            typeof data()?.labels[0] === "string"
+            (data() as any)?.labels !== undefined &&
+            typeof (data() as any)?.labels[0] === "string"
         ) {
             const typedData = data() as MutinyInvoice | ActivityItem;
             try {

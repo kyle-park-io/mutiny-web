@@ -2,6 +2,8 @@
 
 import { Capacitor } from "@capacitor/core";
 
+import { safeDocument, safeNavigator } from "./localStorage";
+
 export function iosNotNative() {
     if (Capacitor.isNativePlatform() || Capacitor.getPlatform() === "ios") {
         return false;
@@ -14,8 +16,9 @@ export function iosNotNative() {
             "iPad",
             "iPhone",
             "iPod"
-        ].includes(navigator.platform) ||
+        ].includes(safeNavigator()?.platform || "") ||
         // iPad on iOS 13 detection
-        (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+        (safeNavigator()?.userAgent.includes("Mac") &&
+            "ontouchend" in (safeDocument() || {}))
     );
 }

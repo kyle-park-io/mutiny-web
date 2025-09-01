@@ -5,6 +5,7 @@ import { Button, ConfirmDialog, showToast } from "~/components";
 import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
 import { eify } from "~/utils";
+import { safeNavigate, safeRemoveLocalStorage } from "~/utils/localStorage";
 
 export function DeleteEverything(props: { emergency?: boolean }) {
     const i18n = useI18n();
@@ -21,7 +22,7 @@ export function DeleteEverything(props: { emergency?: boolean }) {
         try {
             setConfirmLoading(true);
 
-            localStorage.removeItem("profile_setup_stage");
+            safeRemoveLocalStorage("profile_setup_stage");
 
             // Remove the nsec if it exists
             await SecureStoragePlugin.clear();
@@ -49,7 +50,7 @@ export function DeleteEverything(props: { emergency?: boolean }) {
             });
 
             setTimeout(() => {
-                window.location.href = "/";
+                safeNavigate("/");
             }, 1000);
         } catch (e) {
             console.error(e);

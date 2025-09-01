@@ -17,6 +17,7 @@ import {
     satsToFiat,
     toDisplayHandleNaN
 } from "~/utils";
+import { safeDocument, safeWindow } from "~/utils/localStorage";
 
 export type MethodChoice = {
     method: "lightning" | "onchain" | "fedimint";
@@ -185,7 +186,8 @@ export const AmountEditable: ParentComponent<{
         const target = e.target as VisualViewport;
 
         if (
-            (target.height * target.scale) / window.screen.height <
+            (target.height * target.scale) /
+                (safeWindow()?.screen?.height || 1) <
             VIEWPORT_VS_CLIENT_HEIGHT_RATIO
         ) {
             console.log("keyboard is shown");
@@ -197,16 +199,24 @@ export const AmountEditable: ParentComponent<{
     }
 
     onMount(() => {
-        document.body.addEventListener("click", handleClickOutside);
-        if ("visualViewport" in window) {
-            window?.visualViewport?.addEventListener("resize", handleResize);
+        const doc = safeDocument();
+        if (doc?.body) {
+            doc.body.addEventListener("click", handleClickOutside);
+        }
+        const win = safeWindow();
+        if (win && "visualViewport" in win) {
+            win?.visualViewport?.addEventListener("resize", handleResize);
         }
     });
 
     onCleanup(() => {
-        document.body.removeEventListener("click", handleClickOutside);
-        if ("visualViewport" in window) {
-            window?.visualViewport?.removeEventListener("resize", handleResize);
+        const doc = safeDocument();
+        if (doc?.body) {
+            doc.body.removeEventListener("click", handleClickOutside);
+        }
+        const win = safeWindow();
+        if (win && "visualViewport" in win) {
+            win?.visualViewport?.removeEventListener("resize", handleResize);
         }
     });
 

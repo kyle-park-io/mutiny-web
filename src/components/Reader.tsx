@@ -8,6 +8,8 @@ import { Capacitor } from "@capacitor/core";
 import QrScanner from "qr-scanner";
 import { onCleanup, onMount } from "solid-js";
 
+import { safeQuerySelector } from "~/utils/localStorage";
+
 export function Reader(props: { onResult: (result: string) => void }) {
     let container: HTMLVideoElement | undefined;
     let scanner: QrScanner | undefined;
@@ -24,7 +26,7 @@ export function Reader(props: { onResult: (result: string) => void }) {
             await BarcodeScanner.startScan({ formats: [BarcodeFormat.QrCode] });
 
             // The camera gets mounted behind everything so we need to make the background transparent
-            document.querySelector("html")?.classList.add("bg-transparent");
+            safeQuerySelector("html")?.classList.add("bg-transparent");
 
             const listener = await BarcodeScanner.addListener(
                 "barcodeScanned",
@@ -60,7 +62,7 @@ export function Reader(props: { onResult: (result: string) => void }) {
 
     const stopScan = async () => {
         // Restore the background first to minimize flicker
-        document.querySelector("html")?.classList.remove("bg-transparent");
+        safeQuerySelector("html")?.classList.remove("bg-transparent");
         await BarcodeScanner.stopScan();
         await BarcodeScanner.removeAllListeners();
     };

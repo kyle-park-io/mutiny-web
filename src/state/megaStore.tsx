@@ -29,6 +29,16 @@ import {
     subscriptionValid,
     USD_OPTION
 } from "~/utils";
+import {
+    safeClearLocalStorage,
+    safeGetLocalStorage,
+    safeGetLocalStorageJSON,
+    safeMatchMedia,
+    safeNavigator,
+    safeRemoveLocalStorage,
+    safeSetLocalStorage,
+    safeSetLocalStorageJSON
+} from "~/utils/localStorage";
 
 type LoadStage =
     | "fresh"
@@ -57,17 +67,15 @@ export const makeMegaStoreContext = () => {
         deleting: false,
         scan_result: undefined as ParsedParams | undefined,
         price: 0,
-        fiat: localStorage.getItem("fiat_currency")
-            ? (JSON.parse(localStorage.getItem("fiat_currency")!) as Currency)
-            : USD_OPTION,
-        has_backed_up: localStorage.getItem("has_backed_up") === "true",
+        fiat: safeGetLocalStorageJSON("fiat_currency", USD_OPTION) as Currency,
+        has_backed_up: safeGetLocalStorage("has_backed_up") === "true",
         balance: undefined as Partial<MutinyBalance> | undefined,
         last_sync: undefined as number | undefined,
         price_sync_backoff_multiple: 1,
         is_syncing: false,
         wallet_loading: true,
         setup_error: undefined as Error | undefined,
-        is_pwa: window.matchMedia("(display-mode: standalone)").matches,
+        is_pwa: safeMatchMedia("(display-mode: standalone)")?.matches || false,
         existing_tab_detected: false,
         subscription_timestamp: undefined as number | undefined,
         get mutiny_plus(): boolean {
@@ -80,13 +88,13 @@ export const makeMegaStoreContext = () => {
         load_stage: "fresh" as LoadStage,
         settings: undefined as MutinyWalletSettingStrings | undefined,
         safe_mode: searchParams.safe_mode === "true",
-        lang: localStorage.getItem("i18nexLng") || undefined,
+        lang: safeGetLocalStorage("i18nexLng") || undefined,
         preferredInvoiceType: "unified" as "unified" | "lightning" | "onchain",
-        should_zap_hodl: localStorage.getItem("should_zap_hodl") === "true",
+        should_zap_hodl: safeGetLocalStorage("should_zap_hodl") === "true",
         testflightPromptDismissed:
-            localStorage.getItem("testflightPromptDismissed") === "true",
+            safeGetLocalStorage("testflightPromptDismissed") === "true",
         federations: undefined as MutinyFederationIdentity[] | undefined,
-        balanceView: localStorage.getItem("balanceView") || "sats",
+        balanceView: safeGetLocalStorage("balanceView") || "sats",
         expiration_warning: undefined as
             | {
                   expiresTimestamp: number;
@@ -122,6 +130,54 @@ export const makeMegaStoreContext = () => {
                     throw state.setup_error;
                 }
 
+                // Check if Mutiny is globally disabled FIRST
+                if ((window as any)?.MUTINY_DISABLED) {
+                    console.log(
+                        "Mutiny globally disabled - forcing local wallet mode"
+                    );
+                    setState({
+                        load_stage: "done",
+                        wallet_loading: false,
+                        balance: {
+                            confirmed: 0n,
+                            unconfirmed: 0n,
+                            lightning: 0n,
+                            federation: 0n,
+                            force_close: 0n
+                        },
+                        federations: [],
+                        network: "signet" as Network
+                    });
+                    return true;
+                }
+
+                // Check if user has completed setup with private key or address
+                const setupCompleted = safeGetLocalStorage("setup_completed");
+                const walletType = safeGetLocalStorage("wallet_type");
+
+                if (setupCompleted === "true" && walletType) {
+                    console.log(
+                        "Found local wallet setup:",
+                        walletType,
+                        "- skipping ALL Mutiny initialization including tab check"
+                    );
+                    // Skip ALL Mutiny server calls for local wallet
+                    setState({
+                        load_stage: "done",
+                        wallet_loading: false,
+                        balance: {
+                            confirmed: 0n,
+                            unconfirmed: 0n,
+                            lightning: 0n,
+                            federation: 0n,
+                            force_close: 0n
+                        },
+                        federations: [],
+                        network: "signet" as Network
+                    });
+                    return true;
+                }
+
                 setState({ wallet_loading: true });
 
                 await this.checkForExistingTab();
@@ -146,16 +202,20 @@ export const makeMegaStoreContext = () => {
                 await doubleInitDefense();
 
                 setState({ load_stage: "downloading" });
+                console.log("Starting WASM initialization...");
                 await sw.initializeWasm();
+                console.log("WASM initialization completed");
 
                 setState({ load_stage: "checking_for_existing_wallet" });
+
                 const existing = await sw.has_node_manager();
+                console.log("Existing wallet check:", existing);
 
                 if (!existing && !searchParams.skip_setup) {
                     console.log(
-                        "지갑이 존재하지 않지만 자동 setup 이동 비활성화됨 (지갑 코드 추출 모드)"
+                        "No existing wallet found, navigating to setup"
                     );
-                    // navigate("/setup"); // 자동 이동 비활성화
+                    navigate("/setup");
                     return false;
                 }
                 return true;
@@ -213,8 +273,9 @@ export const makeMegaStoreContext = () => {
 
                 // https://developer.mozilla.org/en-US/docs/Web/API/Storage_API
                 // Ask the browser to not clear storage
-                if (navigator.storage && navigator.storage.persist) {
-                    navigator.storage.persist().then((persistent) => {
+                const nav = safeNavigator();
+                if (nav?.storage && nav.storage.persist) {
+                    nav.storage.persist().then((persistent) => {
                         if (persistent) {
                             console.log(
                                 "Storage will not be cleared except by explicit user action"
@@ -231,16 +292,28 @@ export const makeMegaStoreContext = () => {
                     );
                 }
 
-                const success = await sw.setupMutinyWallet(
-                    settings,
-                    password,
-                    state.safe_mode,
-                    state.should_zap_hodl,
-                    nsec
-                );
+                // MUTINY_DISABLED 체크 - mock 모드에서는 setupMutinyWallet 건너뛰기
+                if ((globalThis as any).MUTINY_DISABLED) {
+                    console.log(
+                        "MUTINY_DISABLED is true - skipping setupMutinyWallet call"
+                    );
+                    // Mock 성공 응답
+                    const success = true;
+                    if (!success) {
+                        throw new Error("Failed to initialize mutiny wallet");
+                    }
+                } else {
+                    const success = await sw.setupMutinyWallet(
+                        settings,
+                        password,
+                        state.safe_mode,
+                        state.should_zap_hodl,
+                        nsec
+                    );
 
-                if (!success) {
-                    throw new Error("Failed to initialize mutiny wallet");
+                    if (!success) {
+                        throw new Error("Failed to initialize mutiny wallet");
+                    }
                 }
 
                 // Give other components access to settings via the store
@@ -418,7 +491,7 @@ export const makeMegaStoreContext = () => {
             setState({ scan_result });
         },
         setHasBackedUp() {
-            localStorage.setItem("has_backed_up", "true");
+            safeSetLocalStorage("has_backed_up", "true");
             setState({ has_backed_up: true });
         },
         async listTags(): Promise<TagItem[] | undefined> {
@@ -430,7 +503,7 @@ export const makeMegaStoreContext = () => {
             }
         },
         async saveFiat(fiat: Currency) {
-            localStorage.setItem("fiat_currency", JSON.stringify(fiat));
+            safeSetLocalStorageJSON("fiat_currency", fiat);
             const price = await actions.fetchPrice(fiat);
             setState({
                 price: price,
@@ -438,7 +511,7 @@ export const makeMegaStoreContext = () => {
             });
         },
         saveLanguage(lang: string) {
-            localStorage.setItem("i18nextLng", lang);
+            safeSetLocalStorage("i18nextLng", lang);
             setState({ lang });
         },
         setPreferredInvoiceType(type: "unified" | "lightning" | "onchain") {
@@ -505,12 +578,12 @@ export const makeMegaStoreContext = () => {
             }
         },
         setTestFlightPromptDismissed() {
-            localStorage.setItem("testflightPromptDismissed", "true");
+            safeSetLocalStorage("testflightPromptDismissed", "true");
             setState({ testflightPromptDismissed: true });
         },
         toggleHodl() {
             const should_zap_hodl = !state.should_zap_hodl;
-            localStorage.setItem("should_zap_hodl", should_zap_hodl.toString());
+            safeSetLocalStorage("should_zap_hodl", should_zap_hodl.toString());
             setState({ should_zap_hodl });
         },
         async refreshFederations() {
@@ -538,13 +611,13 @@ export const makeMegaStoreContext = () => {
         },
         cycleBalanceView() {
             if (state.balanceView === "sats") {
-                localStorage.setItem("balanceView", "fiat");
+                safeSetLocalStorage("balanceView", "fiat");
                 setState({ balanceView: "fiat" });
             } else if (state.balanceView === "fiat") {
-                localStorage.setItem("balanceView", "hidden");
+                safeSetLocalStorage("balanceView", "hidden");
                 setState({ balanceView: "hidden" });
             } else {
-                localStorage.setItem("balanceView", "sats");
+                safeSetLocalStorage("balanceView", "sats");
                 setState({ balanceView: "sats" });
             }
         },

@@ -62,6 +62,7 @@ import {
     SetupRestore
 } from "~/routes/setup";
 import { Provider as MegaStoreProvider, useMegaStore } from "~/state/megaStore";
+import { safeHistoryBack } from "~/utils/localStorage";
 
 const setStatusBarStyleDark = async () => {
     await StatusBar.setStyle({ style: Style.Dark });
@@ -84,7 +85,7 @@ function ChildrenOrError(props: { children: JSX.Element }) {
                     if (!canGoBack) {
                         CapacitorApp.exitApp();
                     } else {
-                        window.history.back();
+                        safeHistoryBack();
                     }
                 }
             );
@@ -127,25 +128,13 @@ function ChildrenOrError(props: { children: JSX.Element }) {
 
     return (
         <Switch>
-            <Match when={false}>
-                {/* 지갑 코드 추출을 위해 SetupErrorDisplay 비활성화 */}
+            <Match when={state.setup_error}>
                 <SetupErrorDisplay
                     initialError={state.setup_error!}
                     password={state.password}
                 />
             </Match>
-            <Match when={true}>
-                {/* 에러가 있어도 항상 children을 표시 */}
-                {state.setup_error &&
-                    (() => {
-                        console.log(
-                            "Setup 에러 무시됨 (지갑 코드 추출 모드):",
-                            state.setup_error
-                        );
-                        return null;
-                    })()}
-                {props.children}ㅎ
-            </Match>
+            <Match when={true}>{props.children}</Match>
         </Switch>
     );
 }
@@ -156,25 +145,22 @@ export function Router() {
             root={(props) => (
                 <MetaProvider>
                     <Title>Mutiny Wallet</Title>
-                    {/* ErrorBoundary 완전 비활성화 - 지갑 코드 추출을 위해 */}
-                    <div data-debug="error-boundary-disabled">
+                    <ErrorBoundary fallback={ErrorDisplay}>
                         <Suspense>
-                            {/* ErrorBoundary 비활성화 */}
-                            <div data-debug="suspense-error-boundary-disabled">
+                            <ErrorBoundary fallback={ErrorDisplay}>
                                 <MegaStoreProvider>
                                     <I18nProvider>
-                                        {/* ErrorBoundary 비활성화 */}
-                                        <div data-debug="component-error-boundary-disabled">
+                                        <ErrorBoundary fallback={ErrorDisplay}>
                                             <ChildrenOrError>
                                                 {props.children}
                                             </ChildrenOrError>
                                             <Toaster />
-                                        </div>
+                                        </ErrorBoundary>
                                     </I18nProvider>
                                 </MegaStoreProvider>
-                            </div>
+                            </ErrorBoundary>
                         </Suspense>
-                    </div>
+                    </ErrorBoundary>
                 </MetaProvider>
             )}
         >

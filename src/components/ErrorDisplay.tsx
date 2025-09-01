@@ -13,15 +13,33 @@ import {
 import { useI18n } from "~/i18n/context";
 
 export function SimpleErrorDisplay(props: { error: Error }) {
+    // MUTINY_DISABLED 모드에서는 에러 표시 숨김
+    if ((globalThis as any).MUTINY_DISABLED) {
+        console.log(
+            "ErrorDisplay suppressed in MUTINY_DISABLED mode:",
+            props.error
+        );
+        return null; // 아무것도 렌더링하지 않음
+    }
+
     return (
         <p class="rounded-xl bg-white/10 p-4 font-mono">
-            <span class="font-bold">{props.error.name}</span>:{" "}
-            {props.error.message}
+            <span class="font-bold">{props.error?.name || "Error"}</span>:{" "}
+            {props.error?.message || "Unknown error"}
         </p>
     );
 }
 
 export function ErrorDisplay(props: { error: Error }) {
+    // MUTINY_DISABLED 모드에서는 전체 에러 화면 숨김
+    if ((globalThis as any).MUTINY_DISABLED) {
+        console.log(
+            "ErrorDisplay screen suppressed in MUTINY_DISABLED mode:",
+            props.error
+        );
+        return null;
+    }
+
     const i18n = useI18n();
     onMount(() => {
         console.error(props.error);

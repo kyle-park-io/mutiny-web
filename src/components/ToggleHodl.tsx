@@ -1,6 +1,7 @@
 import { Button, InnerCard, NiceP, VStack } from "~/components";
 import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
+import { safeNavigate } from "~/utils/localStorage";
 
 export function ToggleHodl() {
     const i18n = useI18n();
@@ -9,7 +10,7 @@ export function ToggleHodl() {
     async function toggle() {
         try {
             await actions.toggleHodl();
-            window.location.href = "/";
+            safeNavigate("/");
         } catch (e) {
             console.error(e);
         }

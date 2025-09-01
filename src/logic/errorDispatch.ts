@@ -129,15 +129,17 @@ export function setupGlobalErrorHandling() {
     // 에러 핸들링 비활성화 - 지갑 코드 추출을 위해
     console.log("전역 에러 핸들링이 비활성화되었습니다 - 지갑 코드 추출 모드");
 
-    // Promise rejection 처리 - 콘솔 로깅만 하고 방지하지 않음
-    window.addEventListener("unhandledrejection", (event) => {
-        console.warn("처리되지 않은 Promise rejection:", event.reason);
-        // event.preventDefault() 제거 - 기본 에러 동작 허용
-    });
+    // Promise rejection 처리 - 콘솔 로깅만 하고 방지하지 않음 (브라우저 환경에서만)
+    if (typeof window !== "undefined") {
+        window.addEventListener("unhandledrejection", (event) => {
+            console.warn("처리되지 않은 Promise rejection:", event.reason);
+            // event.preventDefault() 제거 - 기본 에러 동작 허용
+        });
 
-    // 일반 에러 처리 - 콘솔 로깅만 하고 방지하지 않음
-    window.addEventListener("error", (event) => {
-        console.warn("전역 에러:", event.error || event.message);
-        // event.preventDefault() 제거 - 기본 에러 동작 허용
-    });
+        // 일반 에러 처리 - 콘솔 로깅만 하고 방지하지 않음
+        window.addEventListener("error", (event) => {
+            console.warn("전역 에러:", event.error || event.message);
+            // event.preventDefault() 제거 - 기본 에러 동작 허용
+        });
+    }
 }

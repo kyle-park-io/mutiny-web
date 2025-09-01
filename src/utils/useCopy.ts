@@ -4,6 +4,8 @@ import { Capacitor } from "@capacitor/core";
 import type { Accessor } from "solid-js";
 import { createSignal } from "solid-js";
 
+import { safeNavigator } from "~/utils/localStorage";
+
 type UseCopyProps = {
     copiedTimeout?: number;
 };
@@ -20,7 +22,10 @@ export const useCopy = ({ copiedTimeout = 2000 }: UseCopyProps = {}): [
                 string: text
             });
         } else {
-            await navigator.clipboard.writeText(text);
+            const nav = safeNavigator();
+            if (nav?.clipboard) {
+                await nav.clipboard.writeText(text);
+            }
         }
         setCopied(true);
         if (timeout) clearTimeout(timeout);

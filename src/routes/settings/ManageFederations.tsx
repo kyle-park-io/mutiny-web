@@ -56,6 +56,7 @@ import {
 import { useI18n } from "~/i18n/context";
 import { useMegaStore } from "~/state/megaStore";
 import { eify, timeAgo, timeout } from "~/utils";
+import { safeNavigate, safeWindow } from "~/utils/localStorage";
 
 type FederationForm = {
     federation_code: string;
@@ -356,11 +357,17 @@ function FederationListItem(props: {
     // Warn when leaving the page if there's a resync in progress
     createEffect(() => {
         if (resyncLoading()) {
-            window.onbeforeunload = function () {
-                return true;
-            };
+            const win = safeWindow();
+            if (win) {
+                win.onbeforeunload = function () {
+                    return true;
+                };
+            }
         } else {
-            window.onbeforeunload = null;
+            const win = safeWindow();
+            if (win) {
+                win.onbeforeunload = null;
+            }
         }
     });
 
@@ -580,9 +587,7 @@ function FederationListItem(props: {
                     </Show>
                     <Show when={resyncProgress()!.done}>
                         <NiceP>Resync complete!</NiceP>
-                        <Button onClick={() => (window.location.href = "/")}>
-                            Nice
-                        </Button>
+                        <Button onClick={() => safeNavigate("/")}>Nice</Button>
                     </Show>
                 </SimpleDialog>
             </Show>
@@ -664,7 +669,7 @@ export function ManageFederations() {
                                             fed={fed}
                                             balance={
                                                 balances()?.find(
-                                                    (b) =>
+                                                    (b: any) =>
                                                         b.identity_federation_id ===
                                                         fed.federation_id
                                                 )?.balance

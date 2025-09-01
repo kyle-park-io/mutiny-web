@@ -383,7 +383,7 @@ export function Send() {
     // A ParsedParams with an invoice in it
     function processInvoice(source: ParsedParams & { invoice: string }) {
         sw.decode_invoice(source.invoice!)
-            .then((invoice) => {
+            .then((invoice: any) => {
                 if (!invoice) return;
                 if (invoice.expire <= Date.now() / 1000) {
                     navigate("/search");
@@ -398,7 +398,7 @@ export function Send() {
                 setIsHodlInvoice(invoice.potential_hodl_invoice);
                 setSource("lightning");
             })
-            .catch((e) => showToast(eify(e)));
+            .catch((e: any) => showToast(eify(e)));
     }
 
     // A ParsedParams with a node_pubkey in it
@@ -412,7 +412,7 @@ export function Send() {
     function processLnurl(source: ParsedParams & { lnurl: string }) {
         setDecodingLnUrl(true);
         sw.decode_lnurl(source.lnurl)
-            .then((lnurlParams) => {
+            .then((lnurlParams: any) => {
                 setDecodingLnUrl(false);
                 if (lnurlParams.tag === "payRequest") {
                     if (lnurlParams.min == lnurlParams.max) {
@@ -439,7 +439,7 @@ export function Send() {
                     navigate("/redeem");
                 }
             })
-            .catch((e) => showToast(eify(e)));
+            .catch((e: any) => showToast(eify(e)));
     }
 
     createEffect(() => {

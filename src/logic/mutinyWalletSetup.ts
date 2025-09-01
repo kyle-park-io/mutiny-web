@@ -1,3 +1,9 @@
+import {
+    safeGetLocalStorage,
+    safeRemoveLocalStorage,
+    safeSetLocalStorage
+} from "~/utils/localStorage";
+
 export type Network = "bitcoin" | "testnet" | "regtest" | "signet";
 
 export type MutinyWalletSettingStrings = {
@@ -100,7 +106,7 @@ function getItemOrDefault(
     storageKey: string,
     defaultValue: string
 ): string | undefined {
-    const item = localStorage.getItem(storageKey);
+    const item = safeGetLocalStorage(storageKey);
     if (item === "") {
         return undefined;
     } else if (item === null) {
@@ -116,9 +122,9 @@ function setItemIfNotDefault(
     defaultValue: string
 ) {
     if (override === defaultValue) {
-        localStorage.removeItem(key);
+        safeRemoveLocalStorage(key);
     } else {
-        localStorage.setItem(key, override);
+        safeSetLocalStorage(key, override);
     }
 }
 

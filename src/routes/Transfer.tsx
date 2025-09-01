@@ -59,14 +59,14 @@ export function Transfer() {
 
     const calculateMaxFederation = createAsync(async () => {
         const balance = federationBalances()?.find(
-            (f) => f.identity_federation_id === fromFed()?.federation_id
+            (f: any) => f.identity_federation_id === fromFed()?.federation_id
         )?.balance;
         return balance || 0n;
     });
 
     const toBalance = createAsync(async () => {
         return federationBalances()?.find(
-            (f) => f.identity_federation_id === toFed()?.federation_id
+            (f: any) => f.identity_federation_id === toFed()?.federation_id
         )?.balance;
     });
 
